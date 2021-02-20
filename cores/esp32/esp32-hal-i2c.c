@@ -31,7 +31,7 @@
 #include "esp32/rom/ets_sys.h"
 #elif CONFIG_IDF_TARGET_ESP32S2
 #include "esp32s2/rom/ets_sys.h"
-#else 
+#else
 #error Target CONFIG_IDF_TARGET is not supported
 #endif
 #else // ESP32 Before IDF 4.0
@@ -110,7 +110,7 @@ typedef union {
         };
         uint32_t val;
     } I2C_FIFO_ST_t;
-   
+
 // end from tools/sdk/include/soc/soc/i2c_struct.h
 
 // sync between dispatch(i2cProcQueue) and worker(i2c_isr_handler_default)
@@ -353,7 +353,7 @@ static void i2cDumpI2c(i2c_t * i2c)
 }
 #endif
 
-#if (ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO)  
+#if (ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO)
 static void i2cDumpInts(uint8_t num)
 {
 #if defined (ENABLE_I2C_DEBUG_BUFFER)
@@ -393,10 +393,10 @@ static void ARDUINO_ISR_ATTR i2cDumpStatus(i2c_t * i2c){
         };
         uint32_t val;
     } status_reg;
-     
+
     status_reg sr;
     sr.val= i2c->dev->status_reg.val;
-    
+
     log_i("ack(%d) sl_rw(%d) to(%d) arb(%d) busy(%d) sl(%d) trans(%d) rx(%d) tx(%d) sclMain(%d) scl(%d)",sr.ack_rec,sr.slave_rw,sr.time_out,sr.arb_lost,sr.bus_busy,sr.slave_addressed,sr.byte_trans, sr.rx_fifo_cnt, sr.tx_fifo_cnt,sr.scl_main_state_last, sr.scl_state_last);
 }
 #endif
@@ -449,17 +449,17 @@ if(i != fifoPos){// actual data
 static void ARDUINO_ISR_ATTR i2cTriggerDumps(i2c_t * i2c, uint8_t trigger, const char locus[]){
 #if (ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO)&&(defined ENABLE_I2C_DEBUG_BUFFER)
     if( trigger ){
-      log_i("%s",locus);      
+      log_i("%s",locus);
       if(trigger & 1) i2cDumpI2c(i2c);
       if(trigger & 2) i2cDumpInts(i2c->num);
       if(trigger & 4) i2cDumpCmdQueue(i2c);
       if(trigger & 8) i2cDumpStatus(i2c);
       if(trigger & 16) i2cDumpFifo(i2c);
     }
-#endif    
+#endif
 }
  // end of debug support routines
- 
+
 /* Start of CPU Clock change Support
 */
 
@@ -470,7 +470,7 @@ static void i2cApbChangeCallback(void * arg, apb_change_ev_t ev_type, uint32_t o
     }
     uint32_t oldFreq=0;
     switch(ev_type){
-        case APB_BEFORE_CHANGE : 
+        case APB_BEFORE_CHANGE :
             if(new_apb < 3000000) {// too slow
                 log_e("apb speed %d too slow",new_apb);
                 break;
@@ -478,21 +478,21 @@ static void i2cApbChangeCallback(void * arg, apb_change_ev_t ev_type, uint32_t o
             I2C_MUTEX_LOCK(); // lock will spin until current transaction is completed
             break;
         case APB_AFTER_CHANGE :
-            oldFreq = (i2c->dev->scl_low_period.period+i2c->dev->scl_high_period.period); //read old apbCycles 
+            oldFreq = (i2c->dev->scl_low_period.period+i2c->dev->scl_high_period.period); //read old apbCycles
             if(oldFreq>0) { // was configured with value
                 oldFreq = old_apb / oldFreq;
                 i2cSetFrequency(i2c,oldFreq);
             }
             I2C_MUTEX_UNLOCK();
             break;
-        default : 
+        default :
             log_e("unk ev %u",ev_type);
             I2C_MUTEX_UNLOCK();
     }
     return;
 }
 /* End of CPU Clock change Support
-*/ 
+*/
 static void ARDUINO_ISR_ATTR i2cSetCmd(i2c_t * i2c, uint8_t index, uint8_t op_code, uint8_t byte_num, bool ack_val, bool ack_exp, bool ack_check)
 {
     I2C_COMMAND_t cmd;
@@ -504,7 +504,7 @@ static void ARDUINO_ISR_ATTR i2cSetCmd(i2c_t * i2c, uint8_t index, uint8_t op_co
     cmd.op_code = op_code;
     i2c->dev->command[index].val = cmd.val;
 }
- 
+
 
 static void ARDUINO_ISR_ATTR fillCmdQueue(i2c_t * i2c, bool INTS)
 {
@@ -521,7 +521,7 @@ static void ARDUINO_ISR_ATTR fillCmdQueue(i2c_t * i2c, bool INTS)
     bool ena_tx=false; // if we add a Write op, better enable TX_Fifo IRQ
 
     while(!needMoreCmds&&(qp < i2c->queueCount)) { // check if more possible cmds
-        if(i2c->dq[qp].ctrl.stopCmdSent) {// marks that all required cmds[] have been added to peripheral 
+        if(i2c->dq[qp].ctrl.stopCmdSent) {// marks that all required cmds[] have been added to peripheral
             qp++;
         } else {
             needMoreCmds=true;
@@ -572,7 +572,7 @@ static void ARDUINO_ISR_ATTR fillCmdQueue(i2c_t * i2c, bool INTS)
             uint8_t blkSize=0; // max is 255
             while(( tdq->cmdBytesNeeded > tdq->ctrl.mode )&&(!done )) { // more bytes needed and room in cmd queue, leave room for END
                 blkSize = (tdq->cmdBytesNeeded > 255)?255:(tdq->cmdBytesNeeded - tdq->ctrl.mode); // Last read cmd needs different ACK setting, so leave 1 byte remainder on reads
-                tdq->cmdBytesNeeded -= blkSize; 
+                tdq->cmdBytesNeeded -= blkSize;
                 if(tdq->ctrl.mode==1) { //read mode
                     i2cSetCmd(i2c, (cmdIdx)++, I2C_CMD_READ, blkSize,false,false,false); // read    cmd, this can't be the last read.
                     ena_rx=true; // need to enable rxFifo IRQ
@@ -637,8 +637,8 @@ static void ARDUINO_ISR_ATTR fillCmdQueue(i2c_t * i2c, bool INTS)
         if(cmdIdx==15) { //need continuation, even if STOP is in 14, it will not matter
             // cmd buffer is almost full, Add END as a continuation feature
             i2cSetCmd(i2c, (cmdIdx)++,I2C_CMD_END, 0,false,false,false);
-            i2c->dev->int_ena.end_detect=1; 
-            i2c->dev->int_clr.end_detect=1; 
+            i2c->dev->int_ena.end_detect=1;
+            i2c->dev->int_clr.end_detect=1;
             done = true;
         }
 
@@ -731,9 +731,9 @@ static void ARDUINO_ISR_ATTR fillTxFifo(i2c_t * i2c)
             if( ! rxQueueEncountered ) {
               rxQueueEncountered = true;
               if(a > i2c->queuePos){
-                i2c->queuePos = a; 
+                i2c->queuePos = a;
               }
-           }              
+           }
         }
 #if (ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO) && (defined ENABLE_I2C_DEBUG_BUFFER)
 
@@ -759,10 +759,10 @@ static void ARDUINO_ISR_ATTR fillTxFifo(i2c_t * i2c)
 static void ARDUINO_ISR_ATTR emptyRxFifo(i2c_t * i2c)
 {
     uint32_t d, cnt=0, moveCnt;
-    
+
     moveCnt = i2c->dev->status_reg.rx_fifo_cnt;//no need to check the reg until this many are read
 
-    while((moveCnt > 0)&&(i2c->queuePos < i2c->queueCount)){ // data to move    
+    while((moveCnt > 0)&&(i2c->queuePos < i2c->queueCount)){ // data to move
 
         I2C_DATA_QUEUE_t *tdq =&i2c->dq[i2c->queuePos]; //short cut
 
@@ -770,7 +770,7 @@ static void ARDUINO_ISR_ATTR emptyRxFifo(i2c_t * i2c)
             i2c->queuePos++;
             tdq = &i2c->dq[i2c->queuePos];
         }
-      
+
         if(i2c->queuePos >= i2c->queueCount){ // bad stuff, rx data but no place to put it!
             log_e("no Storage location for %d",moveCnt);
         // discard
@@ -781,7 +781,7 @@ static void ARDUINO_ISR_ATTR emptyRxFifo(i2c_t * i2c)
             }
             break;
         }
-        
+
         if(tdq->ctrl.mode == 1){ // read command
             if(moveCnt > (tdq->length - tdq->position)) { //make sure they go in this dq
         // part of these reads go into the next dq
@@ -807,7 +807,7 @@ static void ARDUINO_ISR_ATTR emptyRxFifo(i2c_t * i2c)
 
         moveCnt = i2c->dev->status_reg.rx_fifo_cnt; //any more out there?
     }
-    
+
 #if (ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO)&& (defined ENABLE_I2C_DEBUG_BUFFER)
         // update Debug rxCount
         cnt += (intBuff[intPos[i2c->num]][1][i2c->num])&0xffFF;
@@ -866,16 +866,16 @@ static void ARDUINO_ISR_ATTR i2c_update_error_byte_cnt(i2c_t * i2c)
   Only called after an error has occurred, so, most of the time this function is never used.
   This function obliterates the need to interrupt monitor each byte transferred, at high bitrates
   the byte interrupts were overwhelming the OS.  Spurious Interrupts were being generated.
-  it updates errorByteCnt, errorQueue. 
+  it updates errorByteCnt, errorQueue.
  */
     uint16_t a=0; // start at top of DQ, count how many bytes added to tx fifo, and received from rx_fifo.
     int16_t bc = 0;
     I2C_DATA_QUEUE_t *tdq;
-    i2c->errorByteCnt = 0; 
+    i2c->errorByteCnt = 0;
     while( a < i2c->queueCount){ // add up all bytes loaded into fifo's
         tdq = &i2c->dq[a];
         i2c->errorByteCnt += tdq->ctrl.addrSent;
-        i2c->errorByteCnt += tdq->position; 
+        i2c->errorByteCnt += tdq->position;
         a++;
     }
   // now errorByteCnt contains total bytes moved into and out of FIFO's
@@ -900,10 +900,10 @@ static void ARDUINO_ISR_ATTR i2c_update_error_byte_cnt(i2c_t * i2c)
                 }
             }
         } else break;
-        
+
         i2c->errorQueue++;
-    }  
-  
+    }
+
     i2c->errorByteCnt = bc;
  }
 
@@ -936,7 +936,7 @@ static void ARDUINO_ISR_ATTR i2c_isr_handler_default(void* arg)
         intBuff[intPos[p_i2c->num]][2][p_i2c->num] = xTaskGetTickCountFromISR(); // when IRQ fired
 
 #endif
- 
+
         if (activeInt & I2C_TRANS_START_INT_ST_M) {
             if(p_i2c->stage==I2C_STARTUP) {
                 p_i2c->stage=I2C_RUNNING;
@@ -985,7 +985,7 @@ static void ARDUINO_ISR_ATTR i2c_isr_handler_default(void* arg)
             // the Statemachine only has a 13.1ms max timout, some Devices >500ms
             p_i2c->dev->int_clr.time_out =1;
             activeInt &=~I2C_TIME_OUT_INT_ST;
-          // since a timeout occurred, capture the rxFifo data 
+          // since a timeout occurred, capture the rxFifo data
             emptyRxFifo(p_i2c);
             p_i2c->dev->int_clr.rx_fifo_full=1;
             p_i2c->dev->int_ena.rx_fifo_full=1; //why?
@@ -1191,7 +1191,7 @@ i2c_err_t i2cProcQueue(i2c_t * i2c, uint32_t *readCount, uint16_t timeOutMillis)
     i2c->dev->ctr.trans_start=0; // Pause Machine
     i2c->dev->timeout.tout = 0xFFFFF; // max 13ms
     i2c->dev->int_clr.val = 0x1FFF; // kill them All!
-    
+
     i2c->dev->ctr.ms_mode = 1; // master!
     i2c->queuePos=0;
     i2c->errorByteCnt=0;
@@ -1229,7 +1229,7 @@ i2c_err_t i2cProcQueue(i2c_t * i2c, uint32_t *readCount, uint16_t timeOutMillis)
     // sometimes the emptyRx() actually moves 31 bytes
     // it hasn't overflowed yet, I cannot tell if the new byte is added while
     // emptyRX() is executing or before?
-  // let i2cSetFrequency() set thrhds  
+  // let i2cSetFrequency() set thrhds
   //   f.rx_fifo_full_thrhd = 30; // 30 bytes before INT is issued
   //  f.tx_fifo_empty_thrhd = 0;
     f.fifo_addr_cfg_en = 0; // no directed access
@@ -1244,7 +1244,7 @@ i2c_err_t i2cProcQueue(i2c_t * i2c, uint32_t *readCount, uint16_t timeOutMillis)
     // it should receive a TXFIFO_EMPTY immediately, even before it
     // receives the TRANS_START
 
-    
+
     uint32_t interruptsEnabled =
         I2C_ACK_ERR_INT_ENA | // (BIT(10))  Causes Fatal Error Exit
         I2C_TRANS_START_INT_ENA | // (BIT(9))  Triggered by trans_start=1, initial,END
@@ -1256,16 +1256,16 @@ i2c_err_t i2cProcQueue(i2c_t * i2c, uint32_t *readCount, uint16_t timeOutMillis)
         I2C_RXFIFO_OVF_INT_ENA  | //(BIT(2))  unhandled
         I2C_TXFIFO_EMPTY_INT_ENA | // (BIT(1))    triggers fillTxFifo()
         I2C_RXFIFO_FULL_INT_ENA;  // (BIT(0))     trigger emptyRxFifo()
-  
+
     i2c->dev->int_ena.val = interruptsEnabled;
- 
+
     if(!i2c->intr_handle) { // create ISR for either peripheral
         // log_i("create ISR %d",i2c->num);
         uint32_t ret = 0;
         uint32_t flags = ARDUINO_ISR_FLAG |  //< ISR can be called if cache is disabled
           ESP_INTR_FLAG_LOWMED |   //< Low and medium prio interrupts. These can be handled in C.
           ESP_INTR_FLAG_SHARED; //< Reduce resource requirements, Share interrupts
-      
+
         if(i2c->num) {
             ret = esp_intr_alloc_intrstatus(ETS_I2C_EXT1_INTR_SOURCE, flags, (uint32_t)&i2c->dev->int_status.val, interruptsEnabled, &i2c_isr_handler_default,i2c, &i2c->intr_handle);
         } else {
@@ -1296,9 +1296,9 @@ i2c_err_t i2cProcQueue(i2c_t * i2c, uint32_t *readCount, uint16_t timeOutMillis)
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
     portTickType tBefore=xTaskGetTickCount();
 #endif
-    
+
     // wait for ISR to complete the transfer, or until timeOut in case of bus fault, hardware problem
-    
+
     uint32_t eBits = xEventGroupWaitBits(i2c->i2c_event,EVENT_DONE,pdFALSE,pdTRUE,ticksTimeOut);
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
@@ -1684,7 +1684,7 @@ i2c_err_t i2cSetFrequency(i2c_t * i2c, uint32_t clk_speed)
     if(i2c == NULL) {
         return I2C_ERROR_DEV;
     }
-    uint32_t apb = getApbFrequency(); 
+    uint32_t apb = getApbFrequency();
     uint32_t period = (apb/clk_speed) / 2;
 
     if((apb/8192 > clk_speed)||(apb/MIN_I2C_CLKS < clk_speed)){ //out of bounds
@@ -1701,7 +1701,7 @@ i2c_err_t i2cSetFrequency(i2c_t * i2c, uint32_t clk_speed)
     }
 #ifdef ENABLE_I2C_DEBUG_BUFFER
     log_v("freq=%dHz",clk_speed);
-#endif      
+#endif
     uint32_t halfPeriod = period/2;
     uint32_t quarterPeriod = period/4;
 
@@ -1718,8 +1718,8 @@ i2c_err_t i2cSetFrequency(i2c_t * i2c, uint32_t clk_speed)
 #ifdef ENABLE_I2C_DEBUG_BUFFER
     log_v("cpu Freq=%dMhz, i2c Freq=%dHz",getCpuFrequencyMhz(),clk_speed);
 #endif
-    uint32_t fifo_delta = (INTERRUPT_CYCLE_OVERHEAD/((getCpuFrequencyMhz()*1000000 / clk_speed)*10))+1; 
-    if (fifo_delta > 24) fifo_delta=24;   
+    uint32_t fifo_delta = (INTERRUPT_CYCLE_OVERHEAD/((getCpuFrequencyMhz()*1000000 / clk_speed)*10))+1;
+    if (fifo_delta > 24) fifo_delta=24;
     f.rx_fifo_full_thrhd = 32 - fifo_delta;
     f.tx_fifo_empty_thrhd = fifo_delta;
     i2c->dev->fifo_conf.val = f.val; // set thresholds
@@ -1771,9 +1771,9 @@ uint32_t i2cDebug(i2c_t * i2c, uint32_t setBits, uint32_t resetBits){
         return i2c->debugFlags;
     }
     return 0;
-    
+
  }
- 
+
 uint32_t i2cGetStatus(i2c_t * i2c){
     if(i2c != NULL){
         return i2c->dev->status_reg.val;
@@ -1816,7 +1816,8 @@ i2c_t * i2cInit(uint8_t i2c_num, int8_t sda, int8_t scl, uint32_t clk_speed){
 		i2c_driver_delete((i2c_port_t)i2c_num);
 	}
 
-    i2c_config_t conf = {0};
+    i2c_config_t conf;
+    memset(&conf, 0, sizeof(i2c_config_t));
     conf.mode = I2C_MODE_MASTER;
     conf.scl_io_num = (gpio_num_t)scl;
     conf.sda_io_num = (gpio_num_t)sda;
@@ -1917,7 +1918,7 @@ i2c_err_t i2cDetachSDA(i2c_t * i2c, int8_t sda){
     need to add multi-thread capability, use dq.queueEvent as the group marker. When multiple threads
     transactions are present in the same queue, and an error occurs, abort all succeeding unserviced transactions
     with the same dq.queueEvent value.  Succeeding unserviced transactions with different dq.queueEvent values
-    can be re-queued and processed independently. 
-  30JUL18 complete data only queue elements, this will allow transfers to use multiple data blocks, 
+    can be re-queued and processed independently.
+  30JUL18 complete data only queue elements, this will allow transfers to use multiple data blocks,
  */
 
